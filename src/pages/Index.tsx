@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import TowForm from "@/components/TowForm";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,6 @@ const Index = () => {
     setIsFormVisible(true);
     setIsMobileMenuOpen(false);
     
-    // Scroll to form with smooth animation
     const formSection = document.getElementById("form-section");
     if (formSection) {
       formSection.scrollIntoView({ behavior: "smooth" });
@@ -36,7 +34,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
       <header 
         className={cn(
           "fixed top-0 left-0 right-0 z-50 py-4 transition-all duration-300",
@@ -49,7 +46,6 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="font-semibold text-xl text-wetow-green">WeTow</div>
             
-            {/* Mobile menu button */}
             <button 
               className="md:hidden p-2 text-wetow-green"
               onClick={toggleMobileMenu}
@@ -58,7 +54,6 @@ const Index = () => {
               <Menu size={24} />
             </button>
             
-            {/* Desktop navigation */}
             <div className="hidden md:flex items-center space-x-6">
               <a href="#how-it-works" className="text-sm font-medium hover:text-wetow-green transition-colors">
                 How It Works
@@ -72,7 +67,6 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Mobile menu */}
           {isMobileMenuOpen && (
             <div className="md:hidden mt-4 py-4 px-2 bg-white/90 backdrop-blur-sm rounded-lg animate-fade-in">
               <nav className="flex flex-col space-y-4">
@@ -102,8 +96,7 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="min-h-screen flex items-center pt-16 bg-gradient-to-b from-wetow-green/20 to-white">
+      <section className="min-h-screen flex items-center pt-16 pb-12 bg-gradient-to-b from-wetow-green/20 to-white">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-12">
             <div className="flex-1 space-y-6">
@@ -138,8 +131,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 bg-white">
+      <section id="how-it-works" className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl font-bold mb-4">How WeTow Works</h2>
@@ -182,8 +174,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-24 bg-wetow-green/10">
+      <section id="services" className="py-16 bg-wetow-green/10">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl font-bold mb-4">Our Services</h2>
@@ -220,10 +211,9 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Form Section */}
       <section 
         id="form-section" 
-        className="py-24 bg-gradient-to-b from-white to-wetow-beige/20"
+        className="py-16 bg-gradient-to-b from-white to-wetow-beige/20"
       >
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-10">
@@ -249,7 +239,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Footer */}
       <footer className="bg-wetow-green/90 text-foreground py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -288,3 +277,4 @@ const Index = () => {
 };
 
 export default Index;
+

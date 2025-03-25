@@ -122,16 +122,6 @@ const Index = () => {
                   Request Assistance Now
                 </Button>
               </div>
-              <div className="flex items-center space-x-4 pt-4 animate-slide-in" style={{ animationDelay: "300ms" }}>
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-8 w-8 rounded-full bg-wetow-beige border-2 border-white" />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">4,500+</span> satisfied customers this month
-                </p>
-              </div>
             </div>
             <div className="flex-1 hidden md:block">
               <div className="relative">
@@ -202,7 +192,7 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 title: "Towing",

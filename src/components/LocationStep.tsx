@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +58,9 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
     try {
       const position = await getCurrentLocation();
       const { latitude, longitude } = position.coords;
+      
+      toast.success("Location detected, fetching address...");
+      
       const address = await getAddressFromCoordinates(latitude, longitude);
       
       onUpdate({ 
@@ -67,10 +69,26 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
         longitude 
       });
       
-      toast.success("Location successfully detected");
+      toast.success("Your location has been successfully detected");
     } catch (error) {
       console.error("Error getting current location:", error);
-      toast.error("Failed to get your location. Please try another method.");
+      if (error instanceof GeolocationPositionError) {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            toast.error("Location permission denied. Please allow location access and try again.");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            toast.error("Location information is unavailable.");
+            break;
+          case error.TIMEOUT:
+            toast.error("Location request timed out.");
+            break;
+          default:
+            toast.error("Failed to get your location. Please try another method.");
+        }
+      } else {
+        toast.error("Failed to get your location. Please try another method.");
+      }
     } finally {
       setIsLoadingLocation(false);
     }

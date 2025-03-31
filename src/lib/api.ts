@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { LocationData, UserDetails, FormData } from "./types";
 
@@ -12,10 +13,55 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
     
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
-      timeout: 5000,
+      timeout: 10000, // Increased timeout for more accurate results
       maximumAge: 0
     });
   });
+};
+
+// Format address components into a readable string
+const formatAddress = (addressData: any): string => {
+  if (!addressData || !addressData.address) {
+    return "Address not found";
+  }
+  
+  const components = [];
+  const addr = addressData.address;
+  
+  // Add building number and road
+  if (addr.house_number) {
+    components.push(`${addr.house_number} ${addr.road || addr.pedestrian || addr.street || ''}`);
+  } else if (addr.road || addr.pedestrian || addr.street) {
+    components.push(addr.road || addr.pedestrian || addr.street);
+  }
+  
+  // Add neighborhood or suburb
+  if (addr.neighbourhood || addr.suburb) {
+    components.push(addr.neighbourhood || addr.suburb);
+  }
+  
+  // Add city/town
+  if (addr.city || addr.town || addr.village) {
+    components.push(addr.city || addr.town || addr.village);
+  }
+  
+  // Add state/county
+  if (addr.state || addr.county) {
+    components.push(addr.state || addr.county);
+  }
+  
+  // Add postal code
+  if (addr.postcode) {
+    components.push(addr.postcode);
+  }
+  
+  // Add country
+  if (addr.country) {
+    components.push(addr.country);
+  }
+  
+  // Join all components with commas
+  return components.filter(Boolean).join(", ");
 };
 
 // Convert coordinates to address using reverse geocoding with OpenStreetMap Nominatim
@@ -26,30 +72,32 @@ export const getAddressFromCoordinates = async (
   try {
     console.log(`Getting address for coordinates: ${latitude}, ${longitude}`);
     
-    // Using OpenStreetMap Nominatim API for reverse geocoding
+    // Using OpenStreetMap Nominatim API for reverse geocoding with more detailed data
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
       {
         headers: {
           "Accept-Language": "en",
-          "User-Agent": "WeTow/1.0"
+          "User-Agent": "WeTow Application/1.0" // More professional user agent
         }
       }
     );
     
     if (!response.ok) {
-      throw new Error("Failed to get address");
+      throw new Error(`Failed to get address: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
+    console.log("Nominatim response:", data);
     
-    // Format the address from the response
-    const address = data.display_name || "Address not found";
-    return address;
+    // Use the structured formatter to create a cleaner address
+    const formattedAddress = formatAddress(data);
+    
+    return formattedAddress || data.display_name || `Location at ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
   } catch (error) {
     console.error("Error getting address from coordinates:", error);
-    toast.error("Failed to get your address. Using approximate location.");
-    return `Location near: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    toast.error("Failed to get your precise address. Using approximate location.");
+    return `Location near: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
   }
 };
 

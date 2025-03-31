@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import TowForm from "@/components/TowForm";
 import { Button } from "@/components/ui/button";
@@ -106,11 +105,7 @@ const Index = () => {
       >
         <div className="container mx-auto px-4 pt-10">
           <div className="flex flex-col-reverse md:flex-row items-center gap-8">
-            <div className={cn("w-full", isMobile ? "mt-8" : "md:w-1/2")}>
-              <TowForm />
-            </div>
-            
-            <div className={cn("w-full text-center md:text-left", isMobile ? "" : "md:w-1/2")}>
+            <div className={cn("w-full text-center md:text-left", isMobile ? "" : "md:w-1/2 order-first")}>
               <div className="inline-block bg-wetow-green/30 text-foreground rounded-full px-4 py-1 text-sm font-medium mb-4">
                 Roadside Assistance Made Simple
               </div>
@@ -120,6 +115,10 @@ const Index = () => {
               <p className="text-muted-foreground mb-6 max-w-lg mx-auto md:mx-0">
                 Our trusted tow truck network connects you with reliable service when you need it most.
               </p>
+            </div>
+            
+            <div className={cn("w-full", isMobile ? "mt-8" : "md:w-1/2")}>
+              <TowForm />
             </div>
           </div>
         </div>

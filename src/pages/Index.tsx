@@ -1,13 +1,16 @@
+
 import { useState, useEffect } from "react";
 import TowForm from "@/components/TowForm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [isFormVisible, setIsFormVisible] = useState(true); // Default to true to show form immediately
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -96,44 +99,35 @@ const Index = () => {
         </div>
       </header>
 
-      <section className="min-h-screen flex items-center pt-16 pb-12 bg-gradient-to-b from-wetow-green/20 to-white">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <div className="flex-1 space-y-6">
-              <div className="inline-block bg-wetow-green/30 text-foreground rounded-full px-4 py-1 text-sm font-medium animate-fade-in">
+      {/* Form & CTA Section - Moved to top */}
+      <section 
+        id="form-section" 
+        className="pt-24 pb-8 bg-gradient-to-b from-wetow-green/20 to-white"
+      >
+        <div className="container mx-auto px-4 pt-10">
+          <div className="flex flex-col-reverse md:flex-row items-center gap-8">
+            <div className={cn("w-full", isMobile ? "mt-8" : "md:w-1/2")}>
+              <TowForm />
+            </div>
+            
+            <div className={cn("w-full text-center md:text-left", isMobile ? "" : "md:w-1/2")}>
+              <div className="inline-block bg-wetow-green/30 text-foreground rounded-full px-4 py-1 text-sm font-medium mb-4">
                 Roadside Assistance Made Simple
               </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight animate-slide-in">
-                Stranded? <br />
-                <span className="text-wetow-green">We'll get you moving</span>
+              <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-4">
+                Stranded? <span className="text-wetow-green">We'll get you moving</span>
               </h1>
-              <p className="text-lg text-muted-foreground max-w-lg animate-slide-in" style={{ animationDelay: "100ms" }}>
-                Our trusted tow truck network connects you with reliable service when you need it most. Quick, efficient, and hassle-free.
+              <p className="text-muted-foreground mb-6 max-w-lg mx-auto md:mx-0">
+                Our trusted tow truck network connects you with reliable service when you need it most.
               </p>
-              <div className="pt-4 animate-slide-in" style={{ animationDelay: "200ms" }}>
-                <Button onClick={handleGetStarted} size="lg" className="rounded-full px-8 bg-wetow-green hover:bg-wetow-green/90 text-foreground">
-                  Request Assistance Now
-                </Button>
-              </div>
-            </div>
-            <div className="flex-1 hidden md:block">
-              <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-wetow-green/30 to-wetow-beige/30 rounded-3xl blur-xl opacity-70" />
-                <div className="relative aspect-video bg-gray-200 rounded-2xl overflow-hidden shadow-xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-100/50 to-gray-800/50" />
-                  <div className="absolute inset-0 flex items-center justify-center text-white font-medium text-xl">
-                    Vehicle Assistance Image
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </section>
-
-      <section id="how-it-works" className="py-16 bg-white">
+      
+      <section id="how-it-works" className="py-12 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl font-bold mb-4">How WeTow Works</h2>
             <p className="text-muted-foreground">
               We've streamlined the process to get you back on the road as quickly as possible
@@ -174,9 +168,9 @@ const Index = () => {
         </div>
       </section>
 
-      <section id="services" className="py-16 bg-wetow-green/10">
+      <section id="services" className="py-12 bg-wetow-green/10">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl font-bold mb-4">Our Services</h2>
             <p className="text-muted-foreground">
               We offer a range of services to meet your vehicle assistance needs
@@ -208,34 +202,6 @@ const Index = () => {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section 
-        id="form-section" 
-        className="py-16 bg-gradient-to-b from-white to-wetow-beige/20"
-      >
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <h2 className="text-3xl font-bold mb-4">
-              {isFormVisible 
-                ? "Request Assistance" 
-                : "Need Help With Your Vehicle?"}
-            </h2>
-            <p className="text-muted-foreground mb-8">
-              {isFormVisible 
-                ? "Please fill out the form below to request assistance" 
-                : "Our network of trusted tow truck providers is ready to help"}
-            </p>
-            
-            {!isFormVisible && (
-              <Button onClick={handleGetStarted} size="lg" className="rounded-full px-8 bg-wetow-green hover:bg-wetow-green/90 text-foreground">
-                Get Started
-              </Button>
-            )}
-          </div>
-          
-          {isFormVisible && <TowForm />}
         </div>
       </section>
       
@@ -277,4 +243,3 @@ const Index = () => {
 };
 
 export default Index;
-

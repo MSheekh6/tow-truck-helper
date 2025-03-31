@@ -98,14 +98,13 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Form & CTA Section - Moved to top */}
       <section 
         id="form-section" 
         className="pt-24 pb-8 bg-gradient-to-b from-wetow-green/20 to-white"
       >
         <div className="container mx-auto px-4 pt-10">
-          <div className="flex flex-col-reverse md:flex-row items-center gap-8">
-            <div className={cn("w-full text-center md:text-left", isMobile ? "" : "md:w-1/2 order-first")}>
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className={cn("w-full text-center md:text-left", isMobile ? "" : "md:w-1/2")}>
               <div className="inline-block bg-wetow-green/30 text-foreground rounded-full px-4 py-1 text-sm font-medium mb-4">
                 Roadside Assistance Made Simple
               </div>

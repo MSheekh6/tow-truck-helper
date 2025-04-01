@@ -106,19 +106,32 @@ export const searchAddressByText = async (searchText: string): Promise<{ address
   try {
     console.log(`Searching for address: ${searchText}`);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Return mock address results
     if (!searchText || searchText.length < 3) return [];
     
-    const mockResults = [
-      { address: `${searchText} Main Street, London`, latitude: 51.509865, longitude: -0.118092 },
-      { address: `${searchText} High Road, Manchester`, latitude: 53.483959, longitude: -2.244644 },
-      { address: `${searchText} Bridge Avenue, Birmingham`, latitude: 52.489471, longitude: -1.898575 }
-    ];
+    // Using OpenStreetMap Nominatim API for geocoding address search
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&addressdetails=1&limit=5`,
+      {
+        headers: {
+          "Accept-Language": "en",
+          "User-Agent": "WeTow Application/1.0"
+        }
+      }
+    );
     
-    return mockResults;
+    if (!response.ok) {
+      throw new Error(`Failed to search addresses: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log("Nominatim search response:", data);
+    
+    // Map the response to our expected format
+    return data.map((item: any) => ({
+      address: item.display_name || formatAddress(item),
+      latitude: parseFloat(item.lat),
+      longitude: parseFloat(item.lon)
+    }));
   } catch (error) {
     console.error("Error searching for address:", error);
     toast.error("Failed to search for addresses");

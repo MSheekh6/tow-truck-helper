@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { LocationData, UserDetails, FormData } from "./types";
 
@@ -101,16 +100,19 @@ export const getAddressFromCoordinates = async (
   }
 };
 
-// Search for an address using text input (autocomplete)
+// Search for an address using text input (autocomplete), limited to UK addresses
 export const searchAddressByText = async (searchText: string): Promise<{ address: string; latitude: number; longitude: number }[]> => {
   try {
-    console.log(`Searching for address: ${searchText}`);
+    console.log(`Searching for address in UK: ${searchText}`);
     
     if (!searchText || searchText.length < 3) return [];
     
     // Using OpenStreetMap Nominatim API for geocoding address search
+    // Adding countrycodes=gb to limit results to UK only
+    // Adding bounded=1 to prioritize results in the viewbox (UK area)
+    // Increasing limit to find more potential matches
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&addressdetails=1&limit=5`,
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&addressdetails=1&limit=10&countrycodes=gb&bounded=1&viewbox=-10.5,49.5,1.8,61&dedupe=1`,
       {
         headers: {
           "Accept-Language": "en",
@@ -124,10 +126,39 @@ export const searchAddressByText = async (searchText: string): Promise<{ address
     }
     
     const data = await response.json();
-    console.log("Nominatim search response:", data);
+    console.log("Nominatim UK search response:", data);
+    
+    // If no results found, try a more general search within UK
+    if (data.length === 0) {
+      console.log("No results found, trying broader search within UK");
+      const broadResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}, UK&format=json&addressdetails=1&limit=10&countrycodes=gb`,
+        {
+          headers: {
+            "Accept-Language": "en",
+            "User-Agent": "WeTow Application/1.0"
+          }
+        }
+      );
+      
+      if (broadResponse.ok) {
+        const broadData = await broadResponse.json();
+        console.log("Nominatim broader UK search response:", broadData);
+        data.push(...broadData);
+      }
+    }
+    
+    // Filter to ensure only UK results
+    const ukResults = data.filter((item: any) => {
+      const country = item.address?.country || '';
+      return country.toLowerCase().includes('kingdom') || 
+             country.toLowerCase().includes('uk') || 
+             country.toLowerCase() === 'gb' ||
+             country.toLowerCase() === 'great britain';
+    });
     
     // Map the response to our expected format
-    return data.map((item: any) => ({
+    return ukResults.map((item: any) => ({
       address: item.display_name || formatAddress(item),
       latitude: parseFloat(item.lat),
       longitude: parseFloat(item.lon)

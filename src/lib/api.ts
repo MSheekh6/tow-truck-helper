@@ -1,7 +1,8 @@
+
 import { toast } from "sonner";
 import { LocationData, UserDetails, FormData } from "./types";
 
-// Get current location using browser geolocation
+// Get current location using browser geolocation with maximum accuracy
 export const getCurrentLocation = (): Promise<GeolocationPosition> => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -12,8 +13,8 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
     
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
-      timeout: 10000, // Increased timeout for more accurate results
-      maximumAge: 0
+      timeout: 15000, // Increased timeout for more accurate results
+      maximumAge: 0 // Always get fresh position
     });
   });
 };
@@ -73,11 +74,11 @@ export const getAddressFromCoordinates = async (
     
     // Using OpenStreetMap Nominatim API for reverse geocoding with more detailed data
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&namedetails=1`,
       {
         headers: {
           "Accept-Language": "en",
-          "User-Agent": "WeTow Application/1.0" // More professional user agent
+          "User-Agent": "WeTow Application/1.0"
         }
       }
     );

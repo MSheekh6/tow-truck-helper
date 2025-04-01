@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +30,8 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
   const [searchResults, setSearchResults] = useState<{ address: string; latitude: number; longitude: number }[]>([]);
   const [isLookingUpVehicle, setIsLookingUpVehicle] = useState(false);
   const [regNumber, setRegNumber] = useState(data.vehicleRegNumber || "");
+  const [manualAddress, setManualAddress] = useState(data.address || "");
+  const [manualPostcode, setManualPostcode] = useState("");
   const destinationOptions = [
     "Garage or repair center",
     "Home address",
@@ -52,7 +56,7 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  // Get current location using browser geolocation
+  // Get current location using browser geolocation with high accuracy
   const handleGetCurrentLocation = async () => {
     setIsLoadingLocation(true);
     try {
@@ -106,13 +110,35 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
     toast.success("Location selected");
   };
 
-  // Update manual address
+  // Update manual address - simplified for user direct input
   const handleManualAddressChange = (address: string) => {
+    setManualAddress(address);
     onUpdate({ 
-      address, 
+      address,
       latitude: null, 
       longitude: null 
     });
+  };
+
+  // Handle manual postcode change
+  const handleManualPostcodeChange = (postcode: string) => {
+    setManualPostcode(postcode);
+    // We're not updating location data here as we'll use both address and postcode together
+  };
+
+  // Combine postcode and address for the final manual entry
+  const handleManualEntryComplete = () => {
+    const fullAddress = manualPostcode 
+      ? `${manualAddress}, ${manualPostcode}` 
+      : manualAddress;
+    
+    onUpdate({
+      address: fullAddress,
+      latitude: null,
+      longitude: null
+    });
+    
+    toast.success("Address saved");
   };
 
   // Look up vehicle by registration number
@@ -268,12 +294,42 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
 
                 <TabsContent value={LocationOption.MANUAL} className="mt-0">
                   <div className="space-y-4">
-                    <Input
-                      placeholder="Enter your address manually"
-                      value={data.address || ""}
-                      onChange={(e) => handleManualAddressChange(e.target.value)}
+                    <div>
+                      <Label htmlFor="manual-address">Enter your address</Label>
+                      <Textarea
+                        id="manual-address"
+                        placeholder="Enter your full address"
+                        value={manualAddress}
+                        onChange={(e) => handleManualAddressChange(e.target.value)}
+                        className="w-full mt-1 min-h-[100px]"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="manual-postcode">Postcode</Label>
+                      <Input
+                        id="manual-postcode"
+                        placeholder="Enter your postcode"
+                        value={manualPostcode}
+                        onChange={(e) => handleManualPostcodeChange(e.target.value)}
+                        className="w-full mt-1"
+                      />
+                    </div>
+                    
+                    <Button 
+                      onClick={handleManualEntryComplete}
+                      variant="secondary"
                       className="w-full"
-                    />
+                    >
+                      Save Address
+                    </Button>
+                    
+                    {data.address && locationOption === LocationOption.MANUAL && (
+                      <div className="rounded-md bg-secondary p-3 animate-fade-in">
+                        <p className="font-medium">Your Address:</p>
+                        <p className="text-muted-foreground">{data.address}</p>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>

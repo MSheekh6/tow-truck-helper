@@ -14,6 +14,9 @@ export interface VehicleData {
   engineWorks: boolean;
   canMove: boolean;
   weight?: string;
+  regNumber?: string;
+  make?: string;
+  model?: string;
 }
 
 export interface UserDetails {

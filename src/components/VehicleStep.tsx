@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { VehicleData } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, ArrowRightIcon, CarIcon } from "lucide-react";
+import VehicleRegistration from "./VehicleRegistration";
 
 interface VehicleStepProps {
   data: VehicleData;
@@ -30,6 +31,19 @@ const VehicleStep: React.FC<VehicleStepProps> = ({ data, onUpdate, onNext, onBac
   // Update vehicle weight
   const handleWeightChange = (value: string) => {
     onUpdate({ weight: value });
+  };
+  
+  // Update vehicle registration
+  const handleRegNumberChange = (value: string) => {
+    onUpdate({ regNumber: value });
+  };
+  
+  // Handle vehicle found from lookup
+  const handleVehicleFound = (make: string, model: string) => {
+    onUpdate({ 
+      make: make,
+      model: model
+    });
   };
   
   // Validate and proceed to next step
@@ -55,12 +69,33 @@ const VehicleStep: React.FC<VehicleStepProps> = ({ data, onUpdate, onNext, onBac
             </div>
             
             <div>
-              <h2 className="text-2xl font-medium text-center mb-6">Vehicle Condition</h2>
+              <h2 className="text-2xl font-medium text-center mb-6">Vehicle Details</h2>
               <p className="text-muted-foreground text-center mb-8">
-                Please let us know about the current condition of your vehicle
+                Please provide information about your vehicle
               </p>
               
               <div className="space-y-6">
+                {/* Vehicle Registration Lookup */}
+                <div className="p-4 rounded-lg bg-secondary/30 space-y-4">
+                  <VehicleRegistration 
+                    value={data.regNumber || ''}
+                    onChange={handleRegNumberChange}
+                    onVehicleFound={handleVehicleFound}
+                  />
+                  
+                  {(data.make || data.model) && (
+                    <div className="mt-4 p-3 bg-white/60 rounded-md">
+                      <p className="text-sm font-medium">Vehicle Details:</p>
+                      <p className="text-sm">
+                        {data.make && <span className="font-semibold">Make: </span>}{data.make}
+                      </p>
+                      <p className="text-sm">
+                        {data.model && <span className="font-semibold">Model: </span>}{data.model}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex items-start space-x-3 p-4 rounded-lg bg-secondary/50">
                   <Checkbox 
                     id="engineWorks" 

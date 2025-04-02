@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { LocationData, UserDetails, FormData } from "./types";
 
@@ -171,34 +170,83 @@ export const searchAddressByText = async (searchText: string): Promise<{ address
   }
 };
 
-// Simulate DVLA API for vehicle lookup
+// Use DVLA API for vehicle lookup
 export const lookupVehicleDetails = async (registrationNumber: string): Promise<{ make?: string; model?: string }> => {
   try {
-    // This is a mock function - in production, this would call the actual DVLA API
+    // Make sure we have a registration number
+    if (!registrationNumber || registrationNumber.trim() === "") {
+      return {};
+    }
+    
     console.log(`Looking up vehicle with reg number: ${registrationNumber}`);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Format the registration number (remove spaces)
+    const formattedRegNumber = registrationNumber.trim().replace(/\s+/g, "").toUpperCase();
     
-    // For demo purposes, return mock data based on the first letter of the reg number
-    const firstChar = registrationNumber.charAt(0).toLowerCase();
+    // Using the DVLA Open Data API
+    const response = await fetch(
+      `https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles`, 
+      {
+        method: 'POST',
+        headers: {
+          'x-api-key': 'klRFwNPmQdzfIyF3XSIeaX6wv47eUGM1V7kQgNof',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          registrationNumber: formattedRegNumber
+        })
+      }
+    );
     
-    const mockVehicles: Record<string, { make: string; model: string }> = {
-      a: { make: "Audi", model: "A4" },
-      b: { make: "BMW", model: "3 Series" },
-      f: { make: "Ford", model: "Focus" },
-      h: { make: "Honda", model: "Civic" },
-      m: { make: "Mercedes", model: "C-Class" },
-      n: { make: "Nissan", model: "Qashqai" },
-      t: { make: "Toyota", model: "Corolla" },
-      v: { make: "Volkswagen", model: "Golf" },
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("DVLA API error:", errorData);
+      
+      // Handle specific error codes
+      if (response.status === 400) {
+        toast.error("Please enter a valid vehicle registration number");
+      } else if (response.status === 404) {
+        toast.error("Vehicle not found. Please check registration number");
+      } else {
+        toast.error("Failed to lookup vehicle details");
+      }
+      
+      return {};
+    }
+    
+    const data = await response.json();
+    console.log("DVLA API response:", data);
+    
+    // Extract make and model from the response
+    return {
+      make: data.make || "Unknown",
+      model: data.model || "Unknown"
     };
-    
-    // Return vehicle data if found, otherwise undefined
-    return mockVehicles[firstChar] || { make: "Unknown", model: "Unknown" };
   } catch (error) {
     console.error("Error looking up vehicle:", error);
     toast.error("Failed to lookup vehicle details");
+    
+    // For development fallback, use the mocked data if the API fails
+    if (process.env.NODE_ENV !== 'production') {
+      console.log("Using fallback mock data for development");
+      
+      // For demo purposes, return mock data based on the first letter of the reg number
+      const firstChar = registrationNumber.charAt(0).toLowerCase();
+      
+      const mockVehicles: Record<string, { make: string; model: string }> = {
+        a: { make: "Audi", model: "A4" },
+        b: { make: "BMW", model: "3 Series" },
+        f: { make: "Ford", model: "Focus" },
+        h: { make: "Honda", model: "Civic" },
+        m: { make: "Mercedes", model: "C-Class" },
+        n: { make: "Nissan", model: "Qashqai" },
+        t: { make: "Toyota", model: "Corolla" },
+        v: { make: "Volkswagen", model: "Golf" },
+      };
+      
+      return mockVehicles[firstChar] || { make: "Unknown", model: "Unknown" };
+    }
+    
     return {};
   }
 };

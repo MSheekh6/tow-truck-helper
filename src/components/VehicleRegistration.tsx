@@ -29,10 +29,20 @@ const VehicleRegistration: React.FC<VehicleRegistrationProps> = ({
     setIsLoading(true);
     try {
       const vehicleData = await lookupVehicleDetails(value);
+      console.log("Vehicle data returned:", vehicleData);
       
       if (vehicleData.make && vehicleData.model) {
-        onVehicleFound(vehicleData.make, vehicleData.model);
-        toast.success(`Vehicle found: ${vehicleData.make} ${vehicleData.model}`);
+        if (vehicleData.make === "Unknown" && vehicleData.model === "Unknown") {
+          toast.error("Vehicle found but details are unavailable");
+        } else if (vehicleData.make === "Generic" && vehicleData.model === "Vehicle") {
+          // This is our fallback case
+          const firstChar = value.charAt(0).toUpperCase();
+          toast.success(`Vehicle found: Using sample data for ${firstChar} vehicles`);
+          onVehicleFound(vehicleData.make, vehicleData.model);
+        } else {
+          onVehicleFound(vehicleData.make, vehicleData.model);
+          toast.success(`Vehicle found: ${vehicleData.make} ${vehicleData.model}`);
+        }
       } else {
         toast.error("Vehicle not found or registration number is invalid");
       }

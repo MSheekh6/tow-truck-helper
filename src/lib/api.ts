@@ -198,6 +198,9 @@ export const lookupVehicleDetails = async (registrationNumber: string): Promise<
       }
     );
     
+    // Debug the response
+    console.log("DVLA API response status:", response.status);
+    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error("DVLA API error:", errorData);
@@ -215,13 +218,46 @@ export const lookupVehicleDetails = async (registrationNumber: string): Promise<
     }
     
     const data = await response.json();
-    console.log("DVLA API response:", data);
+    console.log("DVLA API response data:", data);
     
-    // Extract make and model from the response
-    return {
-      make: data.make || "Unknown",
-      model: data.model || "Unknown"
-    };
+    // Check if make and model exist and are not empty strings
+    const make = data.make && data.make.trim() !== "" ? data.make : null;
+    const model = data.model && data.model.trim() !== "" ? data.model : null;
+    
+    // If we have both make and model, return them
+    if (make && model) {
+      return {
+        make: make,
+        model: model
+      };
+    }
+    
+    // If API returned but data is missing or empty, use fallback for dev
+    toast.error("Vehicle found but details are incomplete");
+    
+    // For development fallback, use the mocked data if the API returns incomplete data
+    if (process.env.NODE_ENV !== 'production') {
+      console.log("Using fallback mock data for development");
+      
+      // For demo purposes, return mock data based on the first letter of the reg number
+      const firstChar = registrationNumber.charAt(0).toLowerCase();
+      
+      const mockVehicles: Record<string, { make: string; model: string }> = {
+        a: { make: "Audi", model: "A4" },
+        b: { make: "BMW", model: "3 Series" },
+        f: { make: "Ford", model: "Focus" },
+        h: { make: "Honda", model: "Civic" },
+        m: { make: "Mercedes", model: "C-Class" },
+        n: { make: "Nissan", model: "Qashqai" },
+        p: { make: "Peugeot", model: "308" },
+        t: { make: "Toyota", model: "Corolla" },
+        v: { make: "Volkswagen", model: "Golf" },
+      };
+      
+      return mockVehicles[firstChar] || { make: "Generic", model: "Vehicle" };
+    }
+    
+    return {};
   } catch (error) {
     console.error("Error looking up vehicle:", error);
     toast.error("Failed to lookup vehicle details");
@@ -240,11 +276,12 @@ export const lookupVehicleDetails = async (registrationNumber: string): Promise<
         h: { make: "Honda", model: "Civic" },
         m: { make: "Mercedes", model: "C-Class" },
         n: { make: "Nissan", model: "Qashqai" },
+        p: { make: "Peugeot", model: "308" },
         t: { make: "Toyota", model: "Corolla" },
         v: { make: "Volkswagen", model: "Golf" },
       };
       
-      return mockVehicles[firstChar] || { make: "Unknown", model: "Unknown" };
+      return mockVehicles[firstChar] || { make: "Generic", model: "Vehicle" };
     }
     
     return {};

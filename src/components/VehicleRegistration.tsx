@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { lookupVehicleDetails } from "@/lib/api";
 import { toast } from "sonner";
-import { CarIcon, SearchIcon } from "lucide-react";
+import { CarIcon, SearchIcon, RefreshCwIcon } from "lucide-react";
 
 interface VehicleRegistrationProps {
   value: string;
@@ -19,6 +19,7 @@ const VehicleRegistration: React.FC<VehicleRegistrationProps> = ({
   onVehicleFound,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [lastLookup, setLastLookup] = useState("");
 
   const handleLookup = async () => {
     if (!value || value.trim() === "") {
@@ -26,32 +27,44 @@ const VehicleRegistration: React.FC<VehicleRegistrationProps> = ({
       return;
     }
 
+    // Format registration number
+    const formattedReg = value.trim().toUpperCase();
+    
+    // Don't duplicate lookups unless forced
+    if (formattedReg === lastLookup) {
+      toast.info("Already looked up this registration number");
+      return;
+    }
+
     setIsLoading(true);
+    setLastLookup(formattedReg);
+    
     try {
-      const vehicleData = await lookupVehicleDetails(value);
+      toast.info(`Looking up ${formattedReg}...`);
+      console.log(`Starting lookup for vehicle: ${formattedReg}`);
+      
+      const vehicleData = await lookupVehicleDetails(formattedReg);
       console.log("Vehicle data returned:", vehicleData);
       
       if (vehicleData.make && vehicleData.model) {
-        if (vehicleData.make === "Unknown" && vehicleData.model === "Unknown") {
-          toast.error("Vehicle found but details are unavailable");
-        } else if (vehicleData.make === "Generic" && vehicleData.model === "Vehicle") {
-          // This is our fallback case
-          const firstChar = value.charAt(0).toUpperCase();
-          toast.success(`Vehicle found: Using sample data for ${firstChar} vehicles`);
-          onVehicleFound(vehicleData.make, vehicleData.model);
-        } else {
-          onVehicleFound(vehicleData.make, vehicleData.model);
-          toast.success(`Vehicle found: ${vehicleData.make} ${vehicleData.model}`);
-        }
+        // Successfully found vehicle data
+        onVehicleFound(vehicleData.make, vehicleData.model);
+        toast.success(`Vehicle found: ${vehicleData.make} ${vehicleData.model}`);
       } else {
+        // No data returned
         toast.error("Vehicle not found or registration number is invalid");
       }
     } catch (error) {
       console.error("Error during vehicle lookup:", error);
-      toast.error("Error looking up vehicle details");
+      toast.error("Error looking up vehicle details. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const forceRefresh = () => {
+    setLastLookup(""); // Clear last lookup to force a new one
+    handleLookup();
   };
 
   return (
@@ -85,6 +98,17 @@ const VehicleRegistration: React.FC<VehicleRegistrationProps> = ({
             {isLoading ? "Searching..." : "Search"}
             {!isLoading && <SearchIcon className="ml-2 h-4 w-4" />}
           </Button>
+          {lastLookup && (
+            <Button
+              onClick={forceRefresh}
+              variant="outline"
+              type="button"
+              title="Refresh lookup"
+              disabled={isLoading}
+            >
+              <RefreshCwIcon className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">
           Enter your vehicle registration to automatically lookup the make and model

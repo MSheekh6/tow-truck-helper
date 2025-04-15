@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,6 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ data, onBack, onCom
   const [isCompleted, setIsCompleted] = useState(false);
   const [countdown, setCountdown] = useState(10);
   
-  // Submit the form data
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -34,8 +32,12 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ data, onBack, onCom
       setIsSubmitting(false);
     }
   };
-  
-  // Countdown timer after successful submission
+
+  const handleCall = () => {
+    window.location.href = 'tel:+442012345678';
+    toast.success("Calling support...");
+  };
+
   useEffect(() => {
     if (isCompleted && countdown > 0) {
       const timer = setTimeout(() => {
@@ -133,13 +135,24 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ data, onBack, onCom
                   <span>Back</span>
                 </Button>
                 
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="min-w-[140px]"
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Request"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleCall}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <PhoneIcon className="h-4 w-4" />
+                    Call Us
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="min-w-[140px]"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Request"}
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (

@@ -10,60 +10,45 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
       return;
     }
     
-    // Show a toast to let the user know location detection has started
-    toast.info("Detecting your location with maximum accuracy...");
+    toast.info("Getting your precise location...");
     
-    // Enhanced options for maximum accuracy
-    const options = {
-      enableHighAccuracy: true, // Request the most accurate position possible
-      timeout: 60000, // Longer timeout (60 seconds) for best possible results
-      maximumAge: 0 // Always get fresh position, don't use cached
-    };
-    
-    // Improved success handler with better accuracy handling
-    const successHandler = (position: GeolocationPosition) => {
-      console.log(`Location detected with accuracy: ${position.coords.accuracy}m`);
-      
-      // Check if accuracy is acceptable
-      if (position.coords.accuracy && position.coords.accuracy <= 50) {
-        toast.success(`High accuracy location found (±${Math.round(position.coords.accuracy)}m)`);
-      } else if (position.coords.accuracy && position.coords.accuracy <= 150) {
-        toast.info(`Location found with moderate accuracy (±${Math.round(position.coords.accuracy)}m)`);
-      } else {
-        toast.warning(`Location accuracy is limited (±${Math.round(position.coords.accuracy)}m). Try moving outdoors for better results.`);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log("Raw position data:", position);
+        console.log(`Accuracy: ${position.coords.accuracy} meters`);
+        
+        // For high accuracy locations (< 100m)
+        if (position.coords.accuracy < 100) {
+          toast.success(`Location found with high accuracy (±${Math.round(position.coords.accuracy)}m)`);
+        } else {
+          toast.info(`Location found with accuracy of ±${Math.round(position.coords.accuracy)}m`);
+        }
+        
+        resolve(position);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            toast.error("Please enable location access in your browser settings");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            toast.error("Location information unavailable. Try moving to an open area");
+            break;
+          case error.TIMEOUT:
+            toast.error("Location request timed out. Please try again");
+            break;
+          default:
+            toast.error("Unable to get your location");
+        }
+        reject(error);
+      },
+      {
+        enableHighAccuracy: true,  // Request the best possible accuracy
+        timeout: 10000,            // 10 second timeout
+        maximumAge: 0              // Force fresh location reading
       }
-      
-      // Add additional coordinate information for better precision
-      const enhancedPosition = {
-        ...position,
-        enhancedTimestamp: new Date().toISOString()
-      };
-      
-      resolve(position);
-    };
-    
-    // Enhanced error handler with better user feedback
-    const errorHandler = (error: GeolocationPositionError) => {
-      console.error("Geolocation error:", error.code, error.message);
-      
-      switch (error.code) {
-        case error.PERMISSION_DENIED:
-          toast.error("Location access was denied. Please enable location permissions in your browser settings and try again.");
-          break;
-        case error.POSITION_UNAVAILABLE:
-          toast.error("Your precise location information is unavailable. Try moving to an open area with better GPS signal.");
-          break;
-        case error.TIMEOUT:
-          toast.error("Location request timed out. Please try again or use the manual location entry option.");
-          break;
-        default:
-          toast.error("Could not detect your location accurately. Please try again or use another method.");
-      }
-      reject(error);
-    };
-    
-    // Try to get the most accurate position possible using longer timeout
-    navigator.geolocation.getCurrentPosition(successHandler, errorHandler, options);
+    );
   });
 };
 

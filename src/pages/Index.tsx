@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import TowForm from "@/components/TowForm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Menu } from "lucide-react";
+import { Menu, PhoneIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isFormVisible, setIsFormVisible] = useState(true); // Default to true to show form immediately
+  const [isFormVisible, setIsFormVisible] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -32,6 +33,11 @@ const Index = () => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleCall = () => {
+    window.location.href = 'tel:+442012345678';
+    toast.success("Calling support...");
   };
 
   return (
@@ -114,6 +120,15 @@ const Index = () => {
               <p className="text-muted-foreground mb-6 max-w-lg mx-auto md:mx-0">
                 Our trusted tow truck network connects you with reliable service when you need it most.
               </p>
+              
+              <Button 
+                onClick={handleCall}
+                variant="outline"
+                className="mb-6 gap-2"
+              >
+                <PhoneIcon className="h-4 w-4" />
+                Call Us
+              </Button>
             </div>
             
             <div className={cn("w-full", isMobile ? "mt-8" : "md:w-1/2")}>

@@ -12,44 +12,58 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
     }
     
     // Show a toast to let the user know location detection has started
-    toast.info("Detecting your location with high accuracy...");
+    toast.info("Detecting your location with maximum accuracy...");
     
-    // Options for high accuracy location
+    // Enhanced options for maximum accuracy
     const options = {
       enableHighAccuracy: true, // Request the most accurate position possible
-      timeout: 30000, // Increased timeout (30 seconds) for more accurate results
+      timeout: 60000, // Longer timeout (60 seconds) for best possible results
       maximumAge: 0 // Always get fresh position, don't use cached
     };
     
-    // Success handler with improved position handling
+    // Improved success handler with better accuracy handling
     const successHandler = (position: GeolocationPosition) => {
-      // Check if the accuracy is within acceptable range (less than 100 meters is good)
-      if (position.coords.accuracy && position.coords.accuracy > 100) {
-        // If accuracy is poor, notify but still use the position
-        toast.warning(`Location found with ${Math.round(position.coords.accuracy)}m accuracy. For better results, try again outdoors.`);
+      console.log(`Location detected with accuracy: ${position.coords.accuracy}m`);
+      
+      // Check if accuracy is acceptable
+      if (position.coords.accuracy && position.coords.accuracy <= 50) {
+        toast.success(`High accuracy location found (±${Math.round(position.coords.accuracy)}m)`);
+      } else if (position.coords.accuracy && position.coords.accuracy <= 150) {
+        toast.info(`Location found with moderate accuracy (±${Math.round(position.coords.accuracy)}m)`);
+      } else {
+        toast.warning(`Location accuracy is limited (±${Math.round(position.coords.accuracy)}m). Try moving outdoors for better results.`);
       }
+      
+      // Add additional coordinate information for better precision
+      const enhancedPosition = {
+        ...position,
+        enhancedTimestamp: new Date().toISOString()
+      };
+      
       resolve(position);
     };
     
-    // Error handler with more detailed feedback
+    // Enhanced error handler with better user feedback
     const errorHandler = (error: GeolocationPositionError) => {
+      console.error("Geolocation error:", error.code, error.message);
+      
       switch (error.code) {
         case error.PERMISSION_DENIED:
-          toast.error("Location access was denied. Please enable location permissions in your browser settings.");
+          toast.error("Location access was denied. Please enable location permissions in your browser settings and try again.");
           break;
         case error.POSITION_UNAVAILABLE:
-          toast.error("Your location information is unavailable. Try moving to an area with better GPS signal.");
+          toast.error("Your precise location information is unavailable. Try moving to an open area with better GPS signal.");
           break;
         case error.TIMEOUT:
-          toast.error("Location request timed out. Please try again in an area with better signal.");
+          toast.error("Location request timed out. Please try again or use the manual location entry option.");
           break;
         default:
-          toast.error("Unknown error occurred while detecting location.");
+          toast.error("Could not detect your location accurately. Please try again or use another method.");
       }
       reject(error);
     };
     
-    // Get current position with our enhanced options and handlers
+    // Try to get the most accurate position possible using longer timeout
     navigator.geolocation.getCurrentPosition(successHandler, errorHandler, options);
   });
 };

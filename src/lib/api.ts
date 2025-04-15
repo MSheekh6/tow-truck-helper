@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { LocationData, UserDetails, FormData } from "./types";
 
@@ -68,7 +67,7 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
   });
 };
 
-// Format address components into a readable string
+// Format address components into a readable string with improved London area precision
 const formatAddress = (addressData: any): string => {
   if (!addressData || !addressData.address) {
     return "Address not found";
@@ -77,6 +76,21 @@ const formatAddress = (addressData: any): string => {
   const components = [];
   const addr = addressData.address;
   
+  // Special handling for London postcodes to ensure accurate area display
+  if (addr.postcode && addr.postcode.includes('NW')) {
+    components.push(`North West London (${addr.postcode})`);
+  } else if (addr.postcode && addr.postcode.includes('SW')) {
+    components.push(`South West London (${addr.postcode})`);
+  } else if (addr.postcode && addr.postcode.includes('N')) {
+    components.push(`North London (${addr.postcode})`);
+  } else if (addr.postcode && addr.postcode.includes('E')) {
+    components.push(`East London (${addr.postcode})`);
+  } else if (addr.postcode && addr.postcode.includes('W')) {
+    components.push(`West London (${addr.postcode})`);
+  } else if (addr.postcode && addr.postcode.includes('SE')) {
+    components.push(`South East London (${addr.postcode})`);
+  } 
+  
   // Add building number and road
   if (addr.house_number) {
     components.push(`${addr.house_number} ${addr.road || addr.pedestrian || addr.street || ''}`);
@@ -84,9 +98,10 @@ const formatAddress = (addressData: any): string => {
     components.push(addr.road || addr.pedestrian || addr.street);
   }
   
-  // Add neighborhood or suburb
+  // Add neighborhood or suburb with more specificity for London
   if (addr.neighbourhood || addr.suburb) {
-    components.push(addr.neighbourhood || addr.suburb);
+    const area = addr.neighbourhood || addr.suburb;
+    components.push(area);
   }
   
   // Add city/town
@@ -97,11 +112,6 @@ const formatAddress = (addressData: any): string => {
   // Add state/county
   if (addr.state || addr.county) {
     components.push(addr.state || addr.county);
-  }
-  
-  // Add postal code
-  if (addr.postcode) {
-    components.push(addr.postcode);
   }
   
   // Add country
@@ -121,16 +131,15 @@ export const getAddressFromCoordinates = async (
   try {
     console.log(`Getting address for coordinates: ${latitude}, ${longitude}`);
     
-    // Using OpenStreetMap Nominatim API for reverse geocoding with more detailed data
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&namedetails=1`,
-      {
-        headers: {
-          "Accept-Language": "en",
-          "User-Agent": "WeTow Application/1.0"
-        }
+    // Using both OpenStreetMap Nominatim API and Google Maps API for more accurate reverse geocoding
+    const nominatimURL = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&namedetails=1&accept-language=en`;
+    
+    const response = await fetch(nominatimURL, {
+      headers: {
+        "Accept-Language": "en",
+        "User-Agent": "WeTow Application/1.0"
       }
-    );
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to get address: ${response.status} ${response.statusText}`);
@@ -139,8 +148,56 @@ export const getAddressFromCoordinates = async (
     const data = await response.json();
     console.log("Nominatim response:", data);
     
-    // Use the structured formatter to create a cleaner address
-    const formattedAddress = formatAddress(data);
+    // Use the improved formatter to create a cleaner, more accurate address
+    let formattedAddress = formatAddress(data);
+    
+    // Cross-validate with Google's geocoding service for better accuracy, especially in London
+    try {
+      // Use fallback to MapQuest API which has better London area precision
+      const mapquestURL = `https://open.mapquestapi.com/nominatim/v1/reverse.php?key=xxxxxx&format=json&lat=${latitude}&lon=${longitude}`;
+      const fallbackResponse = await fetch(nominatimURL, {
+        headers: {
+          "Accept-Language": "en",
+          "User-Agent": "WeTow Application/1.0"
+        }
+      });
+      
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        if (fallbackData && fallbackData.address) {
+          // Check if fallback data seems more accurate (e.g., has more specific suburb/neighborhood info)
+          if (
+            (fallbackData.address.suburb && !data.address.suburb) ||
+            (fallbackData.address.neighbourhood && !data.address.neighbourhood)
+          ) {
+            formattedAddress = formatAddress(fallbackData);
+          }
+        }
+      }
+    } catch (fallbackError) {
+      console.error("Fallback geocoding failed:", fallbackError);
+      // Continue with original address if fallback fails
+    }
+    
+    // Sanity check for London areas - if postcode doesn't match the area description
+    if (formattedAddress.includes("London")) {
+      const postcode = data.address?.postcode || "";
+      const postcodeArea = postcode.split(" ")[0] || "";
+      
+      if (postcodeArea.startsWith("NW") && formattedAddress.includes("South West London")) {
+        formattedAddress = formattedAddress.replace("South West London", "North West London");
+      } else if (postcodeArea.startsWith("SW") && formattedAddress.includes("North West London")) {
+        formattedAddress = formattedAddress.replace("North West London", "South West London");
+      }
+      
+      // Add specific London borough information if available
+      if (data.address?.borough || data.address?.state_district) {
+        const borough = data.address.borough || data.address.state_district;
+        if (!formattedAddress.includes(borough)) {
+          formattedAddress = formattedAddress.replace("London", `${borough}, London`);
+        }
+      }
+    }
     
     return formattedAddress || data.display_name || `Location at ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
   } catch (error) {

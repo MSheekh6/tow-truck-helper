@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { LocationData, LocationOption } from "@/lib/types";
-import { MapPinIcon, SearchIcon, PenIcon, ArrowRightIcon, AlertTriangleIcon } from "lucide-react";
+import { MapPinIcon, SearchIcon, PenIcon, ArrowRightIcon, AlertTriangleIcon, RefreshCcwIcon } from "lucide-react";
 import { 
   getCurrentLocation, 
   getAddressFromCoordinates, 
@@ -63,7 +62,7 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
       const position = await getCurrentLocation();
       const { latitude, longitude } = position.coords;
       
-      toast.success("Location detected, fetching address...");
+      toast.success("Location detected, fetching address details...");
       
       const address = await getAddressFromCoordinates(latitude, longitude);
       
@@ -93,6 +92,35 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
       } else {
         toast.error("Failed to get your location. Please try another method.");
       }
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
+  // Try getting location again with higher accuracy
+  const handleRetryLocation = async () => {
+    if (!data.latitude || !data.longitude) {
+      toast.error("No location data available to refine");
+      return;
+    }
+    
+    setIsLoadingLocation(true);
+    try {
+      toast.info("Refining your location...");
+      
+      // Use existing coordinates but request more detailed address info
+      const address = await getAddressFromCoordinates(data.latitude, data.longitude);
+      
+      onUpdate({ 
+        address,
+        latitude: data.latitude, 
+        longitude: data.longitude 
+      });
+      
+      toast.success("Location refined successfully");
+    } catch (error) {
+      console.error("Error refining location:", error);
+      toast.error("Failed to refine your location");
     } finally {
       setIsLoadingLocation(false);
     }
@@ -251,8 +279,22 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
                     
                     {data.address && data.latitude && data.longitude && (
                       <div className="rounded-md bg-secondary p-3 animate-fade-in">
-                        <p className="font-medium">Detected Location:</p>
-                        <p className="text-muted-foreground">{data.address}</p>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">Detected Location:</p>
+                            <p className="text-muted-foreground">{data.address}</p>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleRetryLocation}
+                            disabled={isLoadingLocation}
+                            className="ml-2 flex-shrink-0"
+                          >
+                            <RefreshCcwIcon className="h-3.5 w-3.5 mr-1" />
+                            Refine
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>

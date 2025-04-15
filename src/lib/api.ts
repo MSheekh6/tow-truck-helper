@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { LocationData, UserDetails, FormData } from "./types";
 
@@ -10,11 +11,46 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
       return;
     }
     
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 15000, // Increased timeout for more accurate results
-      maximumAge: 0 // Always get fresh position
-    });
+    // Show a toast to let the user know location detection has started
+    toast.info("Detecting your location with high accuracy...");
+    
+    // Options for high accuracy location
+    const options = {
+      enableHighAccuracy: true, // Request the most accurate position possible
+      timeout: 30000, // Increased timeout (30 seconds) for more accurate results
+      maximumAge: 0 // Always get fresh position, don't use cached
+    };
+    
+    // Success handler with improved position handling
+    const successHandler = (position: GeolocationPosition) => {
+      // Check if the accuracy is within acceptable range (less than 100 meters is good)
+      if (position.coords.accuracy && position.coords.accuracy > 100) {
+        // If accuracy is poor, notify but still use the position
+        toast.warning(`Location found with ${Math.round(position.coords.accuracy)}m accuracy. For better results, try again outdoors.`);
+      }
+      resolve(position);
+    };
+    
+    // Error handler with more detailed feedback
+    const errorHandler = (error: GeolocationPositionError) => {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          toast.error("Location access was denied. Please enable location permissions in your browser settings.");
+          break;
+        case error.POSITION_UNAVAILABLE:
+          toast.error("Your location information is unavailable. Try moving to an area with better GPS signal.");
+          break;
+        case error.TIMEOUT:
+          toast.error("Location request timed out. Please try again in an area with better signal.");
+          break;
+        default:
+          toast.error("Unknown error occurred while detecting location.");
+      }
+      reject(error);
+    };
+    
+    // Get current position with our enhanced options and handlers
+    navigator.geolocation.getCurrentPosition(successHandler, errorHandler, options);
   });
 };
 

@@ -123,7 +123,6 @@ const Index = () => {
               
               <Button 
                 onClick={handleCall}
-                variant="outline"
                 className="mb-6 gap-2"
               >
                 <PhoneIcon className="h-4 w-4" />

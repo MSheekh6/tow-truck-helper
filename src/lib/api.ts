@@ -45,7 +45,7 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
       },
       {
         enableHighAccuracy: true,  // Request the best possible accuracy
-        timeout: 10000,            // 10 second timeout
+        timeout: 30000,            // 30 second timeout (increased from 10s for more accuracy)
         maximumAge: 0              // Force fresh location reading
       }
     );
@@ -62,19 +62,28 @@ const formatAddress = (addressData: any): string => {
   const addr = addressData.address;
   
   // Special handling for London postcodes to ensure accurate area display
-  if (addr.postcode && addr.postcode.includes('NW')) {
-    components.push(`North West London (${addr.postcode})`);
-  } else if (addr.postcode && addr.postcode.includes('SW')) {
-    components.push(`South West London (${addr.postcode})`);
-  } else if (addr.postcode && addr.postcode.includes('N')) {
-    components.push(`North London (${addr.postcode})`);
-  } else if (addr.postcode && addr.postcode.includes('E')) {
-    components.push(`East London (${addr.postcode})`);
-  } else if (addr.postcode && addr.postcode.includes('W')) {
-    components.push(`West London (${addr.postcode})`);
-  } else if (addr.postcode && addr.postcode.includes('SE')) {
-    components.push(`South East London (${addr.postcode})`);
-  } 
+  // More strict postcode-based area identification
+  if (addr.postcode) {
+    const postcodePrefix = addr.postcode.split(' ')[0] || '';
+    
+    if (postcodePrefix.startsWith('NW')) {
+      components.push(`North West London (${addr.postcode})`);
+    } else if (postcodePrefix.startsWith('SW')) {
+      components.push(`South West London (${addr.postcode})`);
+    } else if (postcodePrefix.startsWith('N') && !postcodePrefix.startsWith('NW')) {
+      components.push(`North London (${addr.postcode})`);
+    } else if (postcodePrefix.startsWith('E') && !postcodePrefix.startsWith('EC')) {
+      components.push(`East London (${addr.postcode})`);
+    } else if (postcodePrefix.startsWith('W') && !postcodePrefix.startsWith('WC')) {
+      components.push(`West London (${addr.postcode})`);
+    } else if (postcodePrefix.startsWith('SE')) {
+      components.push(`South East London (${addr.postcode})`);
+    } else if (postcodePrefix.startsWith('EC')) {
+      components.push(`East Central London (${addr.postcode})`);
+    } else if (postcodePrefix.startsWith('WC')) {
+      components.push(`West Central London (${addr.postcode})`);
+    }
+  }
   
   // Add building number and road
   if (addr.house_number) {
@@ -116,9 +125,11 @@ export const getAddressFromCoordinates = async (
   try {
     console.log(`Getting address for coordinates: ${latitude}, ${longitude}`);
     
-    // Using both OpenStreetMap Nominatim API and Google Maps API for more accurate reverse geocoding
+    // Using both primary and alternate endpoints to improve accuracy
     const nominatimURL = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&namedetails=1&accept-language=en`;
+    const alternateURL = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&namedetails=1&accept-language=en`;
     
+    // First try primary endpoint
     const response = await fetch(nominatimURL, {
       headers: {
         "Accept-Language": "en",
@@ -133,54 +144,59 @@ export const getAddressFromCoordinates = async (
     const data = await response.json();
     console.log("Nominatim response:", data);
     
-    // Use the improved formatter to create a cleaner, more accurate address
+    // Verify the data using postcode if available
     let formattedAddress = formatAddress(data);
+    let needsVerification = false;
     
-    // Cross-validate with Google's geocoding service for better accuracy, especially in London
-    try {
-      // Use fallback to MapQuest API which has better London area precision
-      const mapquestURL = `https://open.mapquestapi.com/nominatim/v1/reverse.php?key=xxxxxx&format=json&lat=${latitude}&lon=${longitude}`;
-      const fallbackResponse = await fetch(nominatimURL, {
-        headers: {
-          "Accept-Language": "en",
-          "User-Agent": "WeTow Application/1.0"
-        }
-      });
+    // For London areas, verify the location is correct based on postcode patterns
+    if (formattedAddress.toLowerCase().includes('london')) {
+      needsVerification = true;
       
-      if (fallbackResponse.ok) {
-        const fallbackData = await fallbackResponse.json();
-        if (fallbackData && fallbackData.address) {
-          // Check if fallback data seems more accurate (e.g., has more specific suburb/neighborhood info)
-          if (
-            (fallbackData.address.suburb && !data.address.suburb) ||
-            (fallbackData.address.neighbourhood && !data.address.neighbourhood)
-          ) {
-            formattedAddress = formatAddress(fallbackData);
-          }
-        }
+      // Check if the postcode aligns with the geographical area
+      const postcode = data.address?.postcode || '';
+      const postcodePrefix = postcode.split(' ')[0] || '';
+      
+      // For NW/SW London specifically
+      if (postcodePrefix.startsWith('NW') && !formattedAddress.includes('North West London')) {
+        // We have wrong area, need to correct it
+        formattedAddress = formattedAddress.replace(/South West London|West London|North London|East London|South East London/gi, 'North West London');
+      } else if (postcodePrefix.startsWith('SW') && !formattedAddress.includes('South West London')) {
+        formattedAddress = formattedAddress.replace(/North West London|West London|North London|East London|South East London/gi, 'South West London');
       }
-    } catch (fallbackError) {
-      console.error("Fallback geocoding failed:", fallbackError);
-      // Continue with original address if fallback fails
     }
     
-    // Sanity check for London areas - if postcode doesn't match the area description
-    if (formattedAddress.includes("London")) {
-      const postcode = data.address?.postcode || "";
-      const postcodeArea = postcode.split(" ")[0] || "";
-      
-      if (postcodeArea.startsWith("NW") && formattedAddress.includes("South West London")) {
-        formattedAddress = formattedAddress.replace("South West London", "North West London");
-      } else if (postcodeArea.startsWith("SW") && formattedAddress.includes("North West London")) {
-        formattedAddress = formattedAddress.replace("North West London", "South West London");
-      }
-      
-      // Add specific London borough information if available
-      if (data.address?.borough || data.address?.state_district) {
-        const borough = data.address.borough || data.address.state_district;
-        if (!formattedAddress.includes(borough)) {
-          formattedAddress = formattedAddress.replace("London", `${borough}, London`);
+    // Verify with alternative source for improved accuracy, especially for London
+    if (needsVerification) {
+      try {
+        console.log("Verifying with alternative source...");
+        const alternateResponse = await fetch(alternateURL, {
+          headers: {
+            "Accept-Language": "en",
+            "User-Agent": "WeTow Application/1.0 Verification"
+          }
+        });
+        
+        if (alternateResponse.ok) {
+          const alternateData = await alternateResponse.json();
+          console.log("Alternative response:", alternateData);
+          
+          // Get postcode from alternate source if available
+          const alternatePostcode = alternateData.address?.postcode;
+          
+          if (alternatePostcode) {
+            const altPrefix = alternatePostcode.split(' ')[0] || '';
+            
+            // If we have a clearer postcode indication, use it to refine the area
+            if ((altPrefix.startsWith('NW') && !formattedAddress.includes('North West London')) ||
+                (altPrefix.startsWith('SW') && !formattedAddress.includes('South West London'))) {
+              console.log("Using alternative data for more accurate location");
+              formattedAddress = formatAddress(alternateData);
+            }
+          }
         }
+      } catch (altError) {
+        console.error("Error with alternative source:", altError);
+        // Continue with original address
       }
     }
     

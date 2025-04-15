@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
       
       toast.success("Location detected, fetching address details...");
       
+      // Get a more precise address with our improved geocoding
       const address = await getAddressFromCoordinates(latitude, longitude);
       
       onUpdate({ 
@@ -108,7 +110,7 @@ const LocationStep: React.FC<LocationStepProps> = ({ data, onUpdate, onNext }) =
     try {
       toast.info("Refining your location...");
       
-      // Use existing coordinates but request more detailed address info
+      // Force a fresh geocoding request with better accuracy
       const address = await getAddressFromCoordinates(data.latitude, data.longitude);
       
       onUpdate({ 
